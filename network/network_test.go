@@ -6,5 +6,5 @@ import (
 
 func TestGenConfigTx(t *testing.T) {
 
-	GenerateConfigTx("test", "abc")
+	GenerateConfigTx("/root/gopath/src/github.com/hyperledger/fabric-test/fabric/common/tools/cryptogen/crypto-config", "example.com")
 }
