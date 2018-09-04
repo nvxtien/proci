@@ -6,10 +6,20 @@ import (
 	"bufio"
 	"io/ioutil"
 	"fmt"
+	"log"
+	"os/exec"
 )
 
 // create configtx.yaml.
 func GenerateConfigTx(MSPBaseDir, comName string) (bool, error) {
+	log.Println( " - generate configtx.yaml ...")
+
+	if _, err := os.Stat("./configtx.yaml"); os.IsExist(err) {
+		err := os.Remove("./configtx.yaml")
+		if err != nil {
+			log.Fatalf("Can not delete configtx.yaml")
+		}
+	}
 
 	template, err := os.Open("./configtx.yaml-in")
 	if err != nil {
@@ -35,9 +45,7 @@ func GenerateConfigTx(MSPBaseDir, comName string) (bool, error) {
 	profile := "test"
 
 	configtx := []string{""}
-	for i, line := range lines {
-		fmt.Printf("\n%d %s", i, line)
-
+	for _, line := range lines {
 		if !strings.Contains(line, "#") {
 			if strings.Contains(line, "&OrdererOrg") {
 				configtx = append(configtx, createOrdererOrg(line, MSPBaseDir, comName)...)
@@ -69,13 +77,11 @@ func GenerateConfigTx(MSPBaseDir, comName string) (bool, error) {
 				}
 
 			} else if strings.Contains(line, "&ProfileOrderString") {
-				configtx = append(configtx, line)
-				configtx = append(configtx, "\n")
-				configtx = append(configtx, fmt.Sprintf("    %sOrgsOrdererGenesis:", profile))
-				configtx = append(configtx, fmt.Sprintf("        <<: *ChannelDefaults"))
+				configtx = append(configtx, fmt.Sprintf("    %sOrgsOrdererGenesis:\n", profile))
+				configtx = append(configtx, fmt.Sprintf("        <<: *ChannelDefaults\n"))
 
 			} else if strings.Contains(line, "&ProfileOrgString") {
-				configtx = append(configtx, fmt.Sprintf("    %sorgschannel", profile))
+				configtx = append(configtx, fmt.Sprintf("    %sorgschannel:\n", profile))
 
 			} else if strings.Contains(line, "*PeerOrg") {
 				for i := 1; i <= numberOfOrg; i++ {
@@ -150,4 +156,108 @@ func createOrdererOrg(line string, MSPBaseDir string, comName string) []string {
 
 	return str
 	//return strings.Join(str, "")
+}
+
+func GenerateCryptoCfg() {
+	log.Println("************* generate crypto-config.yaml *************")
+
+	if _, err := os.Stat("./crypto-config.yaml"); os.IsExist(err) {
+		err := os.Remove("./crypto-config.yaml")
+		if err != nil {
+			log.Fatalf("Can not delete crypto-config.yaml")
+		}
+	}
+
+	nOrg := 2
+	nOrderer := 2
+	peersPerOrg := 2
+	comName := "example.com"
+	cryptocfg := []string{""}
+
+	cryptocfg = append(cryptocfg, "OrdererOrgs:\n")
+	cryptocfg = append(cryptocfg, "    - Name: Orderer\n")
+	cryptocfg = append(cryptocfg, fmt.Sprintf("      Domain: %s\n", comName))
+	cryptocfg = append(cryptocfg, "      Template:\n")
+	cryptocfg = append(cryptocfg, fmt.Sprintf("        Count: %d\n", nOrderer))
+
+	cryptocfg = append(cryptocfg, "PeerOrgs:\n")
+	for i := 1; i <= nOrg; i++ {
+		cryptocfg = append(cryptocfg, fmt.Sprintf("    - Name: PeerOrg%d\n", i))
+		cryptocfg = append(cryptocfg, fmt.Sprintf("      Domain: org%d.%s\n", i, comName))
+		cryptocfg = append(cryptocfg, "      EnableNodeOUs: true\n")
+		cryptocfg = append(cryptocfg, "      Template:\n")
+		cryptocfg = append(cryptocfg, fmt.Sprintf("        Count: %d\n", peersPerOrg))
+		cryptocfg = append(cryptocfg, "      Users:\n")
+		cryptocfg = append(cryptocfg, "        Count: 1\n")
+	}
+
+	err := ioutil.WriteFile("crypto-config.yaml", []byte(strings.Join(cryptocfg, "")), 0644)
+	if err != nil {
+		log.Fatalf(err.Error())
+	}
+}
+
+func ExecuteCryptogen() {
+	log.Println("************* execute cryptogen *************")
+
+	if _, err := os.Stat("./crypto-config"); os.IsExist(err) {
+		err := os.Remove("crypto-config")
+		if err != nil {
+			log.Fatalf("Can not delete crypto-config")
+		}
+	}
+
+	path, err := exec.LookPath("cryptogen")
+	if err != nil {
+		log.Fatal("Please install cryptogen")
+	}
+	log.Printf("cryptogen is available at %s\n", path)
+
+	cmd := exec.Command("cryptogen", "generate", "--output=./crypto-config", "--config=./crypto-config.yaml")
+	stdoutStderr, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("%s\n", stdoutStderr)
+}
+
+func CreateOrderGenesisBlock() {
+	log.Println(" - create orderer genesis block ...")
+
+	ordererDir := "./crypto-config/ordererOrganizations"
+	ordBlock := fmt.Sprintf("%s/orderer.block", ordererDir)
+	profile := "test"
+	//testChannel := "channel"
+
+	//CHAN_PROFILE := fmt.Sprintf("%sChannel", profile)
+	ORDERER_PROFILE := fmt.Sprintf("%sOrgsOrdererGenesis", profile)
+	//ORG_PROFILE := fmt.Sprintf("%sorgschannel", profile)
+
+	path, err := exec.LookPath("configtxgen")
+	if err != nil {
+		log.Fatal("Please install configtxgen")
+	}
+
+	log.Printf("configtxgen is available at %s\n", path)
+	// configtxgen -profile "testOrgsOrdererGenesis" -channelID "channel" -outputBlock "./crypto-config/ordererOrganizations/orderer.block"
+
+	// configtxgen -profile "testOrgsOrdererGenesis" -channelID "channel" -outputBlock "./crypto-config/ordererOrganizations/orderer.block"
+
+	cmd := exec.Command("configtxgen",
+		fmt.Sprintf("-profile=%s", ORDERER_PROFILE),
+		fmt.Sprintf("-channelID=%s", "channel"),
+		fmt.Sprintf("-outputBlock=%s", ordBlock))
+
+	//cmd := exec.Command("configtxgen", "-profile=testOrgsOrdererGenesis", "-channelID=channel", "-outputBlock=/home/tiennv14/devenv/gopath/src/github.com/proci/network/crypto-config/ordererOrganizations/orderer.block")
+
+	log.Println(cmd.Args)
+
+
+	stdoutStderr, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("%s\n", stdoutStderr)
 }
