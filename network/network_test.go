@@ -22,5 +22,5 @@ func TestCreateOrderGenesisBlock(t *testing.T) {
 }
 
 func BenchmarkGenerateCryptoCfg(b *testing.B) {
-	GenerateCryptoCfg()
+	//GenerateCryptoCfg()
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/kataras/iris/context"
 	"github.com/kataras/iris/middleware/logger"
 	"github.com/kataras/iris/middleware/recover"
+	"github.com/proci/network"
 )
 
 type User struct {
@@ -34,6 +35,12 @@ func newApp() *iris.Application {
 	// Method:   GET Default Endpoint
 	// Resource: http://localhost:8080
 	app.Handle("GET", "/", func(ctx context.Context) {
+
+		network.GenerateConfigTx("./crypto-config", "nvxtien.com")
+		network.GenerateCryptoCfg()
+		network.ExecuteCryptogen()
+		network.CreateOrderGenesisBlock()
+
 		ctx.JSON(context.Map{"message": "Welcome User Micro Service"})
 	})
 

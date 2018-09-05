@@ -127,7 +127,7 @@ func createPeerOrg(line string, i int, MSPBaseDir string, comName string) []stri
 	configtx = append(configtx, fmt.Sprintf("                Rule: \"OR('PeerOrg%d.admin')\"\n", i))
 	configtx = append(configtx, "\n")
 	configtx = append(configtx, "        AnchorPeers:\n")
-	configtx = append(configtx, fmt.Sprintf("            - Host: peer0.org%d.example.com\n", i))
+	configtx = append(configtx, fmt.Sprintf("            - Host: peer0.org%d.%s\n", i, comName))
 	configtx = append(configtx, fmt.Sprintf("              Port: %d\n", 7060 + 2 *(i - 1) + 1))
 
 	configtx = append(configtx, "\n")
@@ -171,7 +171,7 @@ func GenerateCryptoCfg() {
 	nOrg := 2
 	nOrderer := 2
 	peersPerOrg := 2
-	comName := "example.com"
+	comName := "nvxtien.com"
 	cryptocfg := []string{""}
 
 	cryptocfg = append(cryptocfg, "OrdererOrgs:\n")
@@ -240,6 +240,15 @@ func CreateOrderGenesisBlock() {
 	}
 
 	log.Printf("configtxgen is available at %s\n", path)
+
+	if _, err := os.Stat(ordererDir); os.IsExist(err) {
+		//err := os.Remove("crypto-config")
+		//if err != nil {
+		//	log.Fatalf("Can not find crypto-config")
+		//}
+		log.Printf("Can not find crypto-config")
+	}
+
 	// configtxgen -profile "testOrgsOrdererGenesis" -channelID "channel" -outputBlock "./crypto-config/ordererOrganizations/orderer.block"
 
 	// configtxgen -profile "testOrgsOrdererGenesis" -channelID "channel" -outputBlock "./crypto-config/ordererOrganizations/orderer.block"
@@ -253,11 +262,10 @@ func CreateOrderGenesisBlock() {
 
 	log.Println(cmd.Args)
 
-
-	stdoutStderr, err := cmd.CombinedOutput()
+	_, err = cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("%s\n", stdoutStderr)
+	//fmt.Printf("%s\n", stdoutStderr)
 }
