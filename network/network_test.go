@@ -4,9 +4,17 @@ import (
 	"testing"
 )
 
-func TestGenConfigTx(t *testing.T) {
+var g = &generator{}
 
-	GenerateConfigTx("./crypto-config", "example.com")
+func TestGenConfigTx(t *testing.T) {
+	// 2, "kafka", 2, "test","./crypto-config", "example.com"
+	//g.NumberOfOrg(2)
+	//g.OrdererType("kafka")
+	//g.Company("nvxtien.com")
+	//g.Profile("test")
+	//g.MSPBaseDir("./crypto-config")
+
+	g.GenerateConfigTx()
 }
 
 func TestGenerateCryptoCfg(t *testing.T) {

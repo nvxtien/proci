@@ -32,16 +32,26 @@ func newApp() *iris.Application {
 	app.Use(recover.New())
 	app.Use(logger.New())
 
+
+	//var g = network.New()
+	var g = network.New()
+
 	// Method:   GET Default Endpoint
 	// Resource: http://localhost:8080
 	app.Handle("GET", "/", func(ctx context.Context) {
 
-		network.GenerateConfigTx("./crypto-config", "nvxtien.com")
-		network.GenerateCryptoCfg()
-		network.ExecuteCryptogen()
-		network.CreateOrderGenesisBlock()
+		g.GenerateConfigTx()
+
+		//network.GenerateCryptoCfg()
+		//network.ExecuteCryptogen()
+		//network.CreateOrderGenesisBlock()
 
 		ctx.JSON(context.Map{"message": "Welcome User Micro Service"})
+	})
+
+
+	app.Handle("POST", "/network/create", func(ctx context.Context) {
+		//params := &model.Configuration{}
 	})
 
 	// Gets all users

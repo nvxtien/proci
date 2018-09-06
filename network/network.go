@@ -8,11 +8,76 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"github.com/proci"
 )
 
+type Generator interface {
+	NumberOfOrg(int) Generator
+	OrdererType(proci.OrdererType) Generator
+	NumberOfKafka(int) Generator
+	Profile(string) Generator
+	MSPBaseDir(string) Generator
+	Company(string) Generator
+
+	GenerateConfigTx() (bool, error)
+}
+
+type generator struct {
+	numberOfOrg		int
+	ordererType		proci.OrdererType
+	numberOfKafka	int
+	profile 		string
+	mspBaseDir		string
+	company 		string
+}
+
+func (g *generator) NumberOfOrg(numberOfOrg int) Generator {
+	g.numberOfOrg = numberOfOrg
+	return g
+}
+
+func (g *generator) OrdererType(ordererType proci.OrdererType) Generator {
+	g.ordererType = ordererType
+	return g
+}
+
+func (g *generator) NumberOfKafka(numberOfKafka int) Generator {
+	g.numberOfKafka = numberOfKafka
+	return g
+}
+
+func (g *generator) Profile(profile string) Generator {
+	g.profile = profile
+	return g
+}
+
+func (g *generator) MSPBaseDir(mspBaseDir string) Generator {
+	g.mspBaseDir = mspBaseDir
+	return g
+}
+
+func (g *generator) Company(company string) Generator {
+	g.company = company
+	return g
+}
+
+func New() Generator {
+	return &generator{}
+}
+
 // create configtx.yaml.
-func GenerateConfigTx(MSPBaseDir, comName string) (bool, error) {
+func (g *generator) GenerateConfigTx() (bool, error) {
 	log.Println( " - generate configtx.yaml ...")
+
+
+
+	numberOfOrg := g.numberOfOrg
+	ordererType := g.ordererType
+	numberOfKafka := g.numberOfKafka
+	profile := g.profile
+	MSPBaseDir := g.mspBaseDir
+	comName := g.company
+
 
 	if _, err := os.Stat("./configtx.yaml"); os.IsExist(err) {
 		err := os.Remove("./configtx.yaml")
@@ -39,10 +104,7 @@ func GenerateConfigTx(MSPBaseDir, comName string) (bool, error) {
 		return false, err
 	}
 
-	numberOfOrg := 2
-	ordererType := "kafka"
-	numberOfKafka := 1
-	profile := "test"
+
 
 	configtx := []string{""}
 	for _, line := range lines {
