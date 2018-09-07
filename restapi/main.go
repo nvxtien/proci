@@ -11,6 +11,7 @@ import (
 	"github.com/kataras/iris/middleware/logger"
 	"github.com/kataras/iris/middleware/recover"
 	"github.com/proci/network"
+	"os"
 )
 
 type User struct {
@@ -35,16 +36,25 @@ func newApp() *iris.Application {
 
 	//var g = network.New()
 	var g = network.New()
+	baseDir := fmt.Sprintf("%s/src/github.com/proci/crypto-config", os.Getenv("GOPATH"))
+	g.MSPBaseDir(baseDir)
 
 	// Method:   GET Default Endpoint
 	// Resource: http://localhost:8080
 	app.Handle("GET", "/", func(ctx context.Context) {
 
-		g.GenerateConfigTx()
+		g.NumberOfOrg(2).
+			OrdererType("kafka").
+			Company("nvxtien.com").
+			Profile("test").
+			PeersPerOrg(2).
+			NumberOfOrderer(2).
+			NumberOfChannel(2)
 
-		//network.GenerateCryptoCfg()
-		//network.ExecuteCryptogen()
-		//network.CreateOrderGenesisBlock()
+		g.GenerateConfigTx()
+		g.GenerateCryptoCfg()
+		g.ExecuteCryptogen()
+		g.CreateOrderGenesisBlock()
 
 		ctx.JSON(context.Map{"message": "Welcome User Micro Service"})
 	})

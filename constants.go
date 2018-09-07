@@ -3,6 +3,6 @@ package proci
 type OrdererType string
 
 const (
-	Kafka OrdererType = "kafka"
+	Kafka OrdererType	= "kafka"
 	Solo OrdererType	= "solo"
 )

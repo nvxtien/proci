@@ -15,17 +15,27 @@ type Generator interface {
 	NumberOfOrg(int) Generator
 	OrdererType(proci.OrdererType) Generator
 	NumberOfKafka(int) Generator
+	PeersPerOrg(int) Generator
+	NumberOfOrderer(int) Generator
+	NumberOfChannel(int) Generator
 	Profile(string) Generator
 	MSPBaseDir(string) Generator
 	Company(string) Generator
 
 	GenerateConfigTx() (bool, error)
+	GenerateCryptoCfg()
+	ExecuteCryptogen()
+	CreateOrderGenesisBlock()
+	CreateChannels()
 }
 
 type generator struct {
 	numberOfOrg		int
 	ordererType		proci.OrdererType
 	numberOfKafka	int
+	peersPerOrg		int
+	numberOfOrderer	int
+	numberOfChannel	int
 	profile 		string
 	mspBaseDir		string
 	company 		string
@@ -43,6 +53,21 @@ func (g *generator) OrdererType(ordererType proci.OrdererType) Generator {
 
 func (g *generator) NumberOfKafka(numberOfKafka int) Generator {
 	g.numberOfKafka = numberOfKafka
+	return g
+}
+
+func (g *generator) PeersPerOrg(peersPerOrg int) Generator {
+	g.peersPerOrg = peersPerOrg
+	return g
+}
+
+func (g *generator) NumberOfOrderer(numberOfOrderer int) Generator {
+	g.numberOfOrderer = numberOfOrderer
+	return g
+}
+
+func (g *generator) NumberOfChannel(numberOfChannel int) Generator {
+	g.numberOfChannel = numberOfChannel
 	return g
 }
 
@@ -69,8 +94,6 @@ func New() Generator {
 func (g *generator) GenerateConfigTx() (bool, error) {
 	log.Println( " - generate configtx.yaml ...")
 
-
-
 	numberOfOrg := g.numberOfOrg
 	ordererType := g.ordererType
 	numberOfKafka := g.numberOfKafka
@@ -79,14 +102,14 @@ func (g *generator) GenerateConfigTx() (bool, error) {
 	comName := g.company
 
 
-	if _, err := os.Stat("./configtx.yaml"); os.IsExist(err) {
-		err := os.Remove("./configtx.yaml")
+	if _, err := os.Stat(os.Getenv("GOPATH") + "/src/github.com/proci/configtx.yaml"); os.IsExist(err) {
+		err := os.Remove(os.Getenv("GOPATH") + "/src/github.com/proci/configtx.yaml")
 		if err != nil {
 			log.Fatalf("Can not delete configtx.yaml")
 		}
 	}
 
-	template, err := os.Open("./configtx.yaml-in")
+	template, err := os.Open(os.Getenv("GOPATH") + "/src/github.com/proci/configtx.yaml-in")
 	if err != nil {
 		return false, err
 	}
@@ -103,8 +126,6 @@ func (g *generator) GenerateConfigTx() (bool, error) {
 	if err := scanner.Err(); err != nil {
 		return false, err
 	}
-
-
 
 	configtx := []string{""}
 	for _, line := range lines {
@@ -161,7 +182,7 @@ func (g *generator) GenerateConfigTx() (bool, error) {
 		}
 	}
 
-	err = ioutil.WriteFile("configtx.yaml", []byte(strings.Join(configtx, "")), 0644)
+	err = ioutil.WriteFile(os.Getenv("GOPATH") + "/src/github.com/proci/configtx.yaml", []byte(strings.Join(configtx, "")), 0644)
 	if err != nil {
 		return false, err
 	}
@@ -220,20 +241,21 @@ func createOrdererOrg(line string, MSPBaseDir string, comName string) []string {
 	//return strings.Join(str, "")
 }
 
-func GenerateCryptoCfg() {
+func (g *generator) GenerateCryptoCfg() {
 	log.Println("************* generate crypto-config.yaml *************")
 
-	if _, err := os.Stat("./crypto-config.yaml"); os.IsExist(err) {
-		err := os.Remove("./crypto-config.yaml")
+	if _, err := os.Stat(os.Getenv("GOPATH") + "/src/github.com/proci" + "/crypto-config.yaml"); os.IsExist(err) {
+		err := os.Remove(os.Getenv("GOPATH") + "/src/github.com/proci" + "/crypto-config.yaml")
 		if err != nil {
 			log.Fatalf("Can not delete crypto-config.yaml")
 		}
 	}
 
-	nOrg := 2
-	nOrderer := 2
-	peersPerOrg := 2
-	comName := "nvxtien.com"
+	nOrg := g.numberOfOrg
+	nOrderer := g.numberOfOrderer
+	peersPerOrg := g.peersPerOrg
+	log.Printf("peersPerOrg %d",peersPerOrg)
+	comName := g.company
 	cryptocfg := []string{""}
 
 	cryptocfg = append(cryptocfg, "OrdererOrgs:\n")
@@ -253,43 +275,42 @@ func GenerateCryptoCfg() {
 		cryptocfg = append(cryptocfg, "        Count: 1\n")
 	}
 
-	err := ioutil.WriteFile("crypto-config.yaml", []byte(strings.Join(cryptocfg, "")), 0644)
+	err := ioutil.WriteFile(os.Getenv("GOPATH") + "/src/github.com/proci" + "/crypto-config.yaml", []byte(strings.Join(cryptocfg, "")), 0644)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
 }
 
-func ExecuteCryptogen() {
+func (g *generator) ExecuteCryptogen() {
 	log.Println("************* execute cryptogen *************")
 
-	if _, err := os.Stat("./crypto-config"); os.IsExist(err) {
-		err := os.Remove("crypto-config")
+	if _, err := os.Stat(os.Getenv("GOPATH") + "/src/github.com/proci" + "/crypto-config"); os.IsExist(err) {
+		err := os.Remove(os.Getenv("GOPATH") + "/src/github.com/proci" + "/crypto-config")
 		if err != nil {
 			log.Fatalf("Can not delete crypto-config")
 		}
 	}
 
+	// cryptogen should be in $GOPATH/bin ???
 	path, err := exec.LookPath("cryptogen")
 	if err != nil {
-		log.Fatal("Please install cryptogen")
+		log.Fatalf("Please install cryptogen: %s", err)
 	}
 	log.Printf("cryptogen is available at %s\n", path)
 
-	cmd := exec.Command("cryptogen", "generate", "--output=./crypto-config", "--config=./crypto-config.yaml")
+	cmd := exec.Command("cryptogen", "generate", "--output="+ os.Getenv("GOPATH") + "/src/github.com/proci" +  "/crypto-config", "--config=" + os.Getenv("GOPATH") + "/src/github.com/proci" +  "/crypto-config.yaml")
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(stdoutStderr)
 	}
-
-	fmt.Printf("%s\n", stdoutStderr)
 }
 
-func CreateOrderGenesisBlock() {
+func (g *generator) CreateOrderGenesisBlock() {
 	log.Println(" - create orderer genesis block ...")
 
-	ordererDir := "./crypto-config/ordererOrganizations"
-	ordBlock := fmt.Sprintf("%s/orderer.block", ordererDir)
-	profile := "test"
+	profile := g.profile
+	ordererDir := os.Getenv("GOPATH") + "/src/github.com/proci" + "/crypto-config/ordererOrganizations"
+	ordBlock := fmt.Sprintf("%s/%sorderer.block", ordererDir, profile)
 	//testChannel := "channel"
 
 	//CHAN_PROFILE := fmt.Sprintf("%sChannel", profile)
@@ -303,11 +324,11 @@ func CreateOrderGenesisBlock() {
 
 	log.Printf("configtxgen is available at %s\n", path)
 
-	if _, err := os.Stat(ordererDir); os.IsExist(err) {
+	if _, err := os.Stat(ordererDir); os.IsNotExist(err) {
 		//err := os.Remove("crypto-config")
-		//if err != nil {
-		//	log.Fatalf("Can not find crypto-config")
-		//}
+		if err != nil {
+			log.Fatalf("Can not find crypto-config")
+		}
 		log.Printf("Can not find crypto-config")
 	}
 
@@ -315,7 +336,10 @@ func CreateOrderGenesisBlock() {
 
 	// configtxgen -profile "testOrgsOrdererGenesis" -channelID "channel" -outputBlock "./crypto-config/ordererOrganizations/orderer.block"
 
+	projectDir := os.Getenv("GOPATH") + "/src/github.com/proci"
+
 	cmd := exec.Command("configtxgen",
+		fmt.Sprintf("-configPath=%s", projectDir),
 		fmt.Sprintf("-profile=%s", ORDERER_PROFILE),
 		fmt.Sprintf("-channelID=%s", "channel"),
 		fmt.Sprintf("-outputBlock=%s", ordBlock))
@@ -324,10 +348,96 @@ func CreateOrderGenesisBlock() {
 
 	log.Println(cmd.Args)
 
-	_, err = cmd.CombinedOutput()
+	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(stdoutStderr)
 	}
 
 	//fmt.Printf("%s\n", stdoutStderr)
+}
+
+func (g *generator) CreateChannels() {
+	log.Println("create channels ...")
+
+	path, err := exec.LookPath("configtxgen")
+	if err != nil {
+		log.Fatal("Please install configtxgen")
+	}
+
+	log.Printf("configtxgen is available at %s\n", path)
+
+	nChannel := g.numberOfChannel
+	ordererDir := os.Getenv("GOPATH") + "/src/github.com/proci" + "/crypto-config/ordererOrganizations"
+	ORG_PROFILE := fmt.Sprintf("%sorgschannel", g.profile)
+	//for (( i=1; i<=$nChannel; i++ ))
+	//do
+	//channelTx=$ordererDir"/"$ORG_PROFILE$i".tx"
+	//echo "$CFGEXE -profile $ORG_PROFILE -channelID $ORG_PROFILE"$i" -outputCreateChannelTx $channelTx"
+	//$CFGEXE -profile $ORG_PROFILE -channelID $ORG_PROFILE"$i" -outputCreateChannelTx $channelTx
+	//done
+
+	projectDir := os.Getenv("GOPATH") + "/src/github.com/proci"
+
+	for i := 1; i <= nChannel; i++ {
+		channelTx := fmt.Sprintf("%s/%s%d.tx", ordererDir, ORG_PROFILE, i)
+		fmt.Printf("%s", channelTx)
+		cmd := exec.Command("configtxgen",
+			fmt.Sprintf("-configPath=%s", projectDir),
+			fmt.Sprintf("-profile=%s", ORG_PROFILE),
+			fmt.Sprintf("-channelID=%s%d", ORG_PROFILE, i),
+			fmt.Sprintf("-outputCreateChannelTx=%s", channelTx))
+
+		//cmd := exec.Command("configtxgen", "-profile=testOrgsOrdererGenesis", "-channelID=channel", "-outputBlock=/home/tiennv14/devenv/gopath/src/github.com/proci/network/crypto-config/ordererOrganizations/orderer.block")
+
+		log.Println(cmd.Args)
+
+		stdoutStderr, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Fatal(stdoutStderr)
+		}
+	}
+}
+
+func (g *generator) CreateAnchorPeers() {
+	log.Printf("Create anchor peer ...")
+
+	path, err := exec.LookPath("configtxgen")
+	if err != nil {
+		log.Fatal("Please install configtxgen")
+	}
+
+	log.Printf("configtxgen is available at %s\n", path)
+
+
+	//for (( i=1; i<=$nOrg; i++ ))
+	//do
+	//orgMSP="PeerOrg"$i
+	//OrgMSP=$ordererDir"/"$orgMSP"anchors.tx"
+	//echo "$CFGEXE -profile $ORG_PROFILE -outputAnchorPeersUpdate $OrgMSP -channelID $ORG_PROFILE"$i" -asOrg $orgMSP"
+	//$CFGEXE -profile $ORG_PROFILE -outputAnchorPeersUpdate $OrgMSP -channelID $ORG_PROFILE"$i" -asOrg $orgMSP
+	//done
+
+	ordererDir := os.Getenv("GOPATH") + "/src/github.com/proci" + "/crypto-config/ordererOrganizations"
+	ORG_PROFILE := fmt.Sprintf("%sorgschannel", g.profile)
+	projectDir := os.Getenv("GOPATH") + "/src/github.com/proci"
+
+	for i:=1; i<=g.numberOfOrg; i++ {
+		orgMSP := fmt.Sprintf("PeerOrg%d", i)
+		OrgMSP := fmt.Sprintf("%s/%sanchors.tx", ordererDir, orgMSP)
+		cmd := exec.Command("configtxgen",
+			fmt.Sprintf("-configPath=%s", projectDir),
+			fmt.Sprintf("-profile=%s", ORG_PROFILE),
+			fmt.Sprintf("-outputAnchorPeersUpdate=%s", OrgMSP),
+			fmt.Sprintf("-channelID=%s%d", ORG_PROFILE, i),
+			fmt.Sprintf("-asOrg=%s", orgMSP))
+
+		//cmd := exec.Command("configtxgen", "-profile=testOrgsOrdererGenesis", "-channelID=channel", "-outputBlock=/home/tiennv14/devenv/gopath/src/github.com/proci/network/crypto-config/ordererOrganizations/orderer.block")
+
+		log.Println(cmd.Args)
+
+		stdoutStderr, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Fatal(stdoutStderr)
+		}
+	}
 }
