@@ -15,6 +15,7 @@ type Generator interface {
 	NumberOfOrg(int) Generator
 	OrdererType(proci.OrdererType) Generator
 	NumberOfKafka(int) Generator
+	NumberOfZookeeper(int) Generator
 	PeersPerOrg(int) Generator
 	NumberOfOrderer(int) Generator
 	NumberOfChannel(int) Generator
@@ -31,16 +32,17 @@ type Generator interface {
 }
 
 type generator struct {
-	numberOfOrg		int
-	ordererType		proci.OrdererType
-	numberOfKafka	int
-	peersPerOrg		int
-	numberOfOrderer	int
-	numberOfChannel	int
-	numberOfCa		int
-	profile 		string
-	mspBaseDir		string
-	company 		string
+	numberOfOrg			int
+	ordererType			proci.OrdererType
+	numberOfKafka		int
+	numberOfZookeeper 	int
+	peersPerOrg			int
+	numberOfOrderer		int
+	numberOfChannel		int
+	numberOfCa			int
+	profile 			string
+	mspBaseDir			string
+	company 			string
 }
 
 func (g *generator) NumberOfOrg(numberOfOrg int) Generator {
@@ -55,6 +57,11 @@ func (g *generator) OrdererType(ordererType proci.OrdererType) Generator {
 
 func (g *generator) NumberOfKafka(numberOfKafka int) Generator {
 	g.numberOfKafka = numberOfKafka
+	return g
+}
+
+func (g *generator) NumberOfZookeeper(numberOfZookeeper int) Generator {
+	g.numberOfZookeeper = numberOfZookeeper
 	return g
 }
 

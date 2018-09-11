@@ -102,6 +102,10 @@ func (g *generator) CreateDockerCompose(filename string) {
 		compose += fmt.Sprintf(s_ca, i, i, caPort + i, g.mspBaseDir, g.company, i)
 	}
 
+	var servers = ""
+	for i:=0; i<=g.numberOfZookeeper-1; i++ {
+		servers =  "server.1=zookeeper0:2182:2183:participant "
+	}
 	//ca := Container{}
 	//err := yaml.Unmarshal([]byte(s_ca), &ca)
 	//if err != nil {

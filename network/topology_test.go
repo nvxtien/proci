@@ -20,7 +20,8 @@ func TestCreateDockerCompose(t *testing.T) {
 		PeersPerOrg(2).
 		NumberOfOrderer(2).
 		NumberOfChannel(2).
-		NumberOfCa(2)
+		NumberOfCa(2).
+		NumberOfZookeeper(3)
 
 	g.CreateDockerCompose(filename)
 }
