@@ -18,6 +18,7 @@ type Generator interface {
 	PeersPerOrg(int) Generator
 	NumberOfOrderer(int) Generator
 	NumberOfChannel(int) Generator
+	NumberOfCa(int) Generator
 	Profile(string) Generator
 	MSPBaseDir(string) Generator
 	Company(string) Generator
@@ -36,6 +37,7 @@ type generator struct {
 	peersPerOrg		int
 	numberOfOrderer	int
 	numberOfChannel	int
+	numberOfCa		int
 	profile 		string
 	mspBaseDir		string
 	company 		string
@@ -63,6 +65,11 @@ func (g *generator) PeersPerOrg(peersPerOrg int) Generator {
 
 func (g *generator) NumberOfOrderer(numberOfOrderer int) Generator {
 	g.numberOfOrderer = numberOfOrderer
+	return g
+}
+
+func (g *generator) NumberOfCa(numberOfCa int) Generator {
+	g.numberOfCa = numberOfCa
 	return g
 }
 
