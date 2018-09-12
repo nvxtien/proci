@@ -21,7 +21,9 @@ func TestCreateDockerCompose(t *testing.T) {
 		NumberOfOrderer(2).
 		NumberOfChannel(2).
 		NumberOfCa(2).
-		NumberOfZookeeper(3)
+		NumberOfZookeeper(3).
+		KafkaReplications(7).
+		NumberOfKafka(4)
 
 	g.CreateDockerCompose(filename)
 }

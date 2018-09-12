@@ -72,6 +72,26 @@ var s_zookeeper =
 `
 var zooPort = 2181
 
+var s_kafka =
+`
+  kafka%d:
+    image: hyperledger/fabric-kafka
+    environment: 
+      - KAFKA_BROKER_ID=%d
+      - KAFKA_DEFAULT_REPLICATION_FACTOR=%d
+      - KAFKA_MESSAGE_MAX_BYTES=103809024
+      - KAFKA_REPLICA_FETCH_MAX_BYTES=103809024
+      - KAFKA_ZOOKEEPER_CONNECT=%s
+      - KAFKA_MIN_INSYNC_REPLICAS=2
+      - KAFKA_UNCLEAN_LEADER_ELECTION_ENABLE=false
+    depends_on:%s
+    container_name: kafka%d
+    ports: 
+      - %d:9092
+`
+
+var kafkaPort = 9092
+
 //       - ZOO_SERVERS=server.1=zookeeper0:2182:2183:participant server.2=zookeeper1:3182:3183:participant server.3=zookeeper2:4182:4183:participant
 //    expose:
 //      - "2181"
@@ -100,6 +120,7 @@ func (g *generator) CreateDockerCompose(filename string) {
 	}
 
 	compose += writeZookeeper(g.numberOfZookeeper, zooPort)
+	compose += writeKafka(g.numberOfKafka, g.kafkaReplications, kafkaPort, g.numberOfZookeeper, zooPort)
 
 	fmt.Println(compose)
 
@@ -128,11 +149,35 @@ func writeZookeeper(numberOfZookeeper, baseZooPort int) (result string) {
 
 	fmt.Println(servers)
 
-	port = zooPort
+	port = baseZooPort
 	for i:=0; i<=numberOfZookeeper-1; i++ {
 		var expose = expose(numberOfZookeeper, port)
 		result += fmt.Sprintf(s_zookeeper, i, i+1, port, servers, expose, i)
 		port += 1000
+	}
+	return
+}
+
+func writeKafka(numberOfKafka, kafkaReplications, baseKafkaPort, numberOfZookeeper, baseZooPort int) (result string) {
+
+	var zookeeperConnect = fmt.Sprintf("zookeeper%d:%d", 0, baseZooPort)
+	var port = baseZooPort
+	for i:=1; i<=numberOfZookeeper-1; i++ {
+		port += 1000
+		zookeeperConnect += fmt.Sprintf(",zookeeper%d:%d", i, port)
+	}
+
+	for i:=0; i<=numberOfKafka-1; i++ {
+		var dependsonZookeeper = dependsonZookeepr(numberOfZookeeper)
+		result += fmt.Sprintf(s_kafka, i, i, kafkaReplications, zookeeperConnect, dependsonZookeeper, i, baseKafkaPort+i)
+	}
+
+	return
+}
+
+func dependsonZookeepr(numberOfZookeeper int) (result string) {
+	for i:=0; i<=numberOfZookeeper-1; i++ {
+		result += fmt.Sprintf("\n      - zookeeper%d", i)
 	}
 	return
 }

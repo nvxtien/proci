@@ -16,6 +16,7 @@ type Generator interface {
 	OrdererType(proci.OrdererType) Generator
 	NumberOfKafka(int) Generator
 	NumberOfZookeeper(int) Generator
+	KafkaReplications(int) Generator
 	PeersPerOrg(int) Generator
 	NumberOfOrderer(int) Generator
 	NumberOfChannel(int) Generator
@@ -36,6 +37,7 @@ type generator struct {
 	ordererType			proci.OrdererType
 	numberOfKafka		int
 	numberOfZookeeper 	int
+	kafkaReplications	int
 	peersPerOrg			int
 	numberOfOrderer		int
 	numberOfChannel		int
@@ -62,6 +64,11 @@ func (g *generator) NumberOfKafka(numberOfKafka int) Generator {
 
 func (g *generator) NumberOfZookeeper(numberOfZookeeper int) Generator {
 	g.numberOfZookeeper = numberOfZookeeper
+	return g
+}
+
+func (g *generator) KafkaReplications(kafkaReplications int) Generator {
+	g.kafkaReplications = kafkaReplications
 	return g
 }
 
