@@ -65,13 +65,10 @@ var s_zookeeper =
     image: hyperledger/fabric-zookeeper
     environment: 
       - ZOO_MY_ID=%d
-      - ZOO_PORT=2181
-      - ZOO_SERVERS=server.1=zookeeper0:2182:2183:participant server.2=zookeeper1:3182:3183:participant server.3=zookeeper2:4182:4183:participant
-    expose:
-      - "2181"
-      - "2182"
-      - "2183"
-    container_name: zookeeper0
+      - ZOO_PORT=%d
+      - ZOO_SERVERS=%s
+    expose:%s
+    container_name: zookeeper%d
 `
 var zooPort = 2181
 
@@ -102,44 +99,40 @@ func (g *generator) CreateDockerCompose(filename string) {
 		compose += fmt.Sprintf(s_ca, i, i, caPort + i, g.mspBaseDir, g.company, i)
 	}
 
-	var servers = ""
-	for i:=0; i<=g.numberOfZookeeper-1; i++ {
-		servers =  "server.1=zookeeper0:2182:2183:participant "
-	}
-	//ca := Container{}
-	//err := yaml.Unmarshal([]byte(s_ca), &ca)
-	//if err != nil {
-	//	log.Fatalf(err.Error())
-	//}
-	//
-	//topo := Topo{&services{}}
-	//topo.Services.Ca = append(topo.Services.Ca, &ca)
-	//topo.Services.Ca = append(topo.Services.Ca, &ca)
+	compose += writeZookeeper(g.numberOfZookeeper, zooPort)
 
-	//def, err := ioutil.ReadFile(filename)
-	//if err != nil {
-	//	log.Fatalf(err.Error())
-	//}
-
-	//fmt.Printf("%s", string(def))
-
-
-	//fmt.Printf("%s\n", t.Services.Ca.Command)
-
-	//err = yaml.Unmarshal(def, &t)
-	//fmt.Printf("%s\n", compose)
-
-	//compose, _ := yaml.Marshal(&topo)
-	//fmt.Printf("%s\n", compose)
+	fmt.Println(compose)
 
 	err := ioutil.WriteFile(os.Getenv("GOPATH") + "/src/github.com/proci" + "/docker-compose.yaml", []byte(compose), 0644)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
+}
 
-	//err = yaml.Unmarshal(compose, &t)
-	//compose, _ = yaml.Marshal(&t)
-	//fmt.Printf("%s\n", t.Services.Peer.Environment)
+func expose(numberOfZookeeper, baseZooPort int) (result string) {
+	var port = baseZooPort
+	for i:=0; i<=numberOfZookeeper-1; i++ {
+		result += fmt.Sprintf("\n      - \"%d\"", port)
+		port += 1
+	}
+	return
+}
 
+func writeZookeeper(numberOfZookeeper, baseZooPort int) (result string) {
+	var servers = ""
+	var port = baseZooPort
+	for i:=0; i<=numberOfZookeeper-1; i++ {
+		servers += fmt.Sprintf("server.%d=zookeeper%d:%d:%d:participant ", i+1, i, port+1, port+2)
+		port += 1000
+	}
 
+	fmt.Println(servers)
+
+	port = zooPort
+	for i:=0; i<=numberOfZookeeper-1; i++ {
+		var expose = expose(numberOfZookeeper, port)
+		result += fmt.Sprintf(s_zookeeper, i, i+1, port, servers, expose, i)
+		port += 1000
+	}
+	return
 }
