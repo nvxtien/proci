@@ -18,7 +18,7 @@ func TestCreateDockerCompose(t *testing.T) {
 		Profile("test").
 		MSPBaseDir(baseDir).
 		PeersPerOrg(2).
-		NumberOfOrderer(2).
+		NumberOfOrderer(3).
 		NumberOfChannel(2).
 		NumberOfCa(2).
 		NumberOfZookeeper(3).

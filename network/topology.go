@@ -92,24 +92,33 @@ var s_kafka =
 
 var kafkaPort = 9092
 
-//       - ZOO_SERVERS=server.1=zookeeper0:2182:2183:participant server.2=zookeeper1:3182:3183:participant server.3=zookeeper2:4182:4183:participant
-//    expose:
-//      - "2181"
-//      - "2182"
-//      - "2183"
+var s_orderer =
+`
+  orderer%d.%s:
+    image: hyperledger/fabric-orderer
+    environment: 
+      - ORDERER_GENERAL_LOGLEVEL=ERROR
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=%d
+      - ORDERER_GENERAL_GENESISMETHOD=file
+      - ORDERER_GENERAL_GENESISFILE=/opt/hyperledger/fabric/msp/crypto-config/ordererOrganizations/orderer.block
+      - ORDERER_GENERAL_LOCALMSPID=OrdererOrg
+      - ORDERER_GENERAL_LOCALMSPDIR=%s/msp
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=%s/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=%s/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[%s/tls/ca.crt]
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    command: orderer
+    volumes: 
+      - %s:/opt/hyperledger/fabric/msp/crypto-config
+    ports: 
+      - %d:%d
+    container_name: orderer%d.%s
+    depends_on:%s 
+`
 
-//"zookeeper": {
-//"image": "hyperledger/fabric-zookeeper",
-//"environment": {
-//"ZOO_MY_ID": "0",
-//"ZOO_PORT": "zookeeper:2181",
-//"ZOO_SERVERS": "ZOO_SERVERS=server.1=zookeeper0:2182:2183:participant"
-//},
-//"ports": [
-//"zooPort:2181"
-//],
-//"container_name": "zookeeper"
-//}
+var ordererPort = 5005
 
 func (g *generator) CreateDockerCompose(filename string) {
 
@@ -121,6 +130,7 @@ func (g *generator) CreateDockerCompose(filename string) {
 
 	compose += writeZookeeper(g.numberOfZookeeper, zooPort)
 	compose += writeKafka(g.numberOfKafka, g.kafkaReplications, kafkaPort, g.numberOfZookeeper, zooPort)
+	compose += writeOrderer(g.numberOfOrderer, ordererPort, g.numberOfKafka, g.company, g.mspBaseDir)
 
 	fmt.Println(compose)
 
@@ -167,8 +177,8 @@ func writeKafka(numberOfKafka, kafkaReplications, baseKafkaPort, numberOfZookeep
 		zookeeperConnect += fmt.Sprintf(",zookeeper%d:%d", i, port)
 	}
 
+	var dependsonZookeeper = dependsonZookeepr(numberOfZookeeper)
 	for i:=0; i<=numberOfKafka-1; i++ {
-		var dependsonZookeeper = dependsonZookeepr(numberOfZookeeper)
 		result += fmt.Sprintf(s_kafka, i, i, kafkaReplications, zookeeperConnect, dependsonZookeeper, i, baseKafkaPort+i)
 	}
 
@@ -178,6 +188,26 @@ func writeKafka(numberOfKafka, kafkaReplications, baseKafkaPort, numberOfZookeep
 func dependsonZookeepr(numberOfZookeeper int) (result string) {
 	for i:=0; i<=numberOfZookeeper-1; i++ {
 		result += fmt.Sprintf("\n      - zookeeper%d", i)
+	}
+	return
+}
+
+func writeOrderer(numberOfOrderer, ordererPort, numberOfKafka int, company, mspBaseDir string) (result string) {
+
+	var dependsonKafka = dependsonKafka(numberOfKafka)
+
+	var port = ordererPort
+	for i:=0; i<=numberOfOrderer-1; i++ {
+		ordererDir := fmt.Sprintf("/opt/hyperledger/fabric/msp/crypto-config/ordererOrganizations/%s/orderers/orderer%d.%s", company, i, company)
+		result += fmt.Sprintf(s_orderer, i, company, port + i, ordererDir, ordererDir, ordererDir, ordererDir, mspBaseDir, port+i, port+i, i, company, dependsonKafka)
+	}
+
+	return
+}
+
+func dependsonKafka(numberOfKafka int) (result string) {
+	for i:=0; i<=numberOfKafka-1; i++ {
+		result += fmt.Sprintf("\n      - kafka%d", i)
 	}
 	return
 }
