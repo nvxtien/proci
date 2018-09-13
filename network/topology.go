@@ -120,6 +120,51 @@ var s_orderer =
 
 var ordererPort = 5005
 
+var s_peer =
+`
+  %s:
+    image: hyperledger/fabric-peer
+    environment: 
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_LOGGING_LEVEL=INFO
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=nl_default
+      - CORE_PEER_PROFILE_ENABLED=true
+      - CORE_PEER_GOSSIP_USELEADERELECTION=true
+      - CORE_PEER_GOSSIP_ORGLEADER=false
+      - CORE_PEER_GOSSIP_ENDPOINT=%s:%d
+      - CORE_PEER_LISTENADDRESS=%s:%d
+      - CORE_PEER_ID=%s
+      - CORE_PEER_EVENTS_ADDRESS=%s:%d%s
+      - CORE_PEER_MSPCONFIGPATH=%s/msp
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb3:5984
+      - CORE_PEER_LOCALMSPID=PeerOrg2
+      - CORE_PEER_ADDRESS=%s:%d
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=%s:%d
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=%s/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=%s/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=%s/tls/ca.crt
+      - CORE_PEER_TLS_CLIENTAUTHREQUIRED=true
+      - CORE_PEER_TLS_CLIENTROOTCAS_FILES=/opt/hyperledger/fabric/msp/crypto-config/ordererOrganizations/trade.com/orderers/orderer0.trade.com/tls/ca.crt /opt/hyperledger/fabric/msp/crypto-config/ordererOrganizations/trade.com/orderers/orderer1.trade.com/tls/ca.crt /opt/hyperledger/fabric/msp/crypto-config/ordererOrganizations/trade.com/orderers/orderer2.trade.com/tls/ca.crt  /opt/hyperledger/fabric/msp/crypto-config/peerOrganizations/org1.trade.com/ca/ca.org1.trade.com-cert.pem /opt/hyperledger/fabric/msp/crypto-config/peerOrganizations/org2.trade.com/ca/ca.org2.trade.com-cert.pem /opt/hyperledger/fabric/msp/crypto-config/peerOrganizations/org3.trade.com/ca/ca.org3.trade.com-cert.pem
+    volumes: 
+      - /var/run/:/host/var/run/
+      - /home/tiennv14/devenv/gopath/src/github.com/hyperledger/fabric-test/fabric/common/tools/cryptogen/crypto-config:/opt/hyperledger/fabric/msp/crypto-config
+    ports: 
+      - 7064:7064
+      - 6054:6054
+    depends_on: 
+      - orderer1.trade.com
+      - peer0.org2.trade.com
+      - couchdb3
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: peer node start
+    container_name: peer1.org2.trade.com
+`
+
+var vp0Port = 7061
+var event0Port = 6051
+
 func (g *generator) CreateDockerCompose(filename string) {
 
 	var compose = "version: '2'\n\nservices:"
@@ -208,6 +253,33 @@ func writeOrderer(numberOfOrderer, ordererPort, numberOfKafka int, company, mspB
 func dependsonKafka(numberOfKafka int) (result string) {
 	for i:=0; i<=numberOfKafka-1; i++ {
 		result += fmt.Sprintf("\n      - kafka%d", i)
+	}
+	return
+}
+
+
+func writePeer(numberOfOrg, peersPerOrg, vp0Port, event0Port int, company string) (result string) {
+	vpPort := vp0Port
+	eventPort := event0Port
+	for i:=0; i<=numberOfOrg; i++ {
+		for j:=0; j<peersPerOrg; j++ {
+			peer := fmt.Sprintf("peer%d.org%d.%s", j, i, company)
+			orderer := fmt.Sprintf("org%d.%s", i, company)
+			peerDir := fmt.Sprintf("/opt/hyperledger/fabric/msp/crypto-config/peerOrganizations/%s/peers/%s", orderer, peer)
+			if j != 0 {
+				//- CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org2.trade.com:7063
+				peer0Port := vp0Port + i * peersPerOrg
+				peer0 := fmt.Sprintf("peer0.org%d.%s", i, company)
+				boostrap := fmt.Sprintf("\n      - CORE_PEER_GOSSIP_BOOTSTRAP=%s:%d\n", peer0, peer0Port)
+				//      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org2.trade.com:7063
+				result += fmt.Sprintf(s_peer, peer, peer, vpPort, peer, vpPort, peer, peer, eventPort, boostrap)
+			} else {
+				result += fmt.Sprintf(s_peer, peer, peer, vpPort, peer, vpPort, peer, peer, eventPort, peerDir,
+					peer, vpPort, peer, vpPort, peerDir, peerDir, peerDir)
+			}
+			vp0Port++
+			eventPort++
+		}
 	}
 	return
 }
