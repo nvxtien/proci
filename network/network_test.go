@@ -18,7 +18,7 @@ func TestGenerator(t *testing.T) {
 		Profile("test").
 		MSPBaseDir(baseDir).
 		PeersPerOrg(2).
-		NumberOfOrderer(2).
+		NumberOfOrderer(3).
 		NumberOfChannel(2)
 
 	t.Run("GenConfigTx", func(t *testing.T) {
