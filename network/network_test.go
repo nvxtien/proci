@@ -1,6 +1,7 @@
 package network
 
 import (
+	"log"
 	"testing"
 	"fmt"
 	"os"
@@ -12,6 +13,13 @@ func TestGenerator(t *testing.T) {
 
 	baseDir := fmt.Sprintf("%s/src/github.com/proci/crypto-config", os.Getenv("GOPATH"))
 
+	if src, err := os.Stat(baseDir); src.IsDir() {
+		err = os.RemoveAll(baseDir)
+		if err != nil {
+			log.Fatalf(err.Error())
+		}
+	}
+
 	g.NumberOfOrg(2).
 		OrdererType("kafka").
 		Company("nvxtien.com").
@@ -19,7 +27,11 @@ func TestGenerator(t *testing.T) {
 		MSPBaseDir(baseDir).
 		PeersPerOrg(2).
 		NumberOfOrderer(3).
-		NumberOfChannel(2)
+		NumberOfChannel(2).
+		NumberOfCa(2).
+		NumberOfZookeeper(3).
+		KafkaReplications(7).
+		NumberOfKafka(4)
 
 	t.Run("GenConfigTx", func(t *testing.T) {
 		g.GenerateConfigTx()

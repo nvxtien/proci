@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 type Container struct {
@@ -47,8 +49,13 @@ var s_ca =
   ca%d:
     image: hyperledger/fabric-ca
     environment: 
-      - FABRIC_CA_HOME:/etc/hyperledger/fabric-ca-server
-      - FABRIC_CA_SERVER_CA_NAME:ca%d
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca%d
+      - FABRIC_CA_SERVER_CA_CERTFILE=%s/ca.org%d.%s-cert.pem
+      - FABRIC_CA_SERVER_CA_KEYFILE=%s/%s
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_TLS_CERTFILE=%s/ca.org%d.%s-cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=%s/%s
     ports: 
       - %d:7054
     command: sh -c 'fabric-ca-server start --cfg.identities.allowremove --cfg.affiliations.allowremove -b admin:adminpw -d'
@@ -169,23 +176,28 @@ var s_couchdb =
   couchdb%d:
     image: hyperledger/fabric-couchdb
     ports: 
-      - 5989:5984
+      - %d:5984
     container_name: couchdb%d
 `
+
+var couchdbPort = 5984
+
 
 func (g *generator) CreateDockerCompose(filename string) {
 
 	var compose = "version: '2'\n\nservices:"
-
+	/*company := g.company
+	config := "/etc/hyperledger/fabric-ca-server-config"
 	for i:=0; i<=g.numberOfCa-1; i++ {
-		compose += fmt.Sprintf(s_ca, i, i, caPort + i, g.mspBaseDir, g.company, i)
-	}
+		compose += fmt.Sprintf(s_ca, i, i, config, i, company, config, i, company, config, config, caPort + i, g.mspBaseDir, g.company, i)
+	}*/
 
+	compose += writeCa(g.numberOfOrg, g.numberOfCa, caPort, g.mspBaseDir, g.company)
 	compose += writeZookeeper(g.numberOfZookeeper, zooPort)
 	compose += writeKafka(g.numberOfKafka, g.kafkaReplications, kafkaPort, g.numberOfZookeeper, zooPort)
 	compose += writeOrderer(g.numberOfOrderer, ordererPort, g.numberOfKafka, g.company, g.mspBaseDir)
 	compose += writePeer(g.numberOfOrderer, g.numberOfOrg, g.peersPerOrg, vp0Port, event0Port, g.company, g.mspBaseDir)
-	compose += writeCouchdb(g.numberOfOrg, g.peersPerOrg)
+	compose += writeCouchdb(g.numberOfOrg, g.peersPerOrg, couchdbPort)
 
 	fmt.Println(compose)
 
@@ -200,6 +212,42 @@ func expose(numberOfZookeeper, baseZooPort int) (result string) {
 	for i:=0; i<=numberOfZookeeper-1; i++ {
 		result += fmt.Sprintf("\n      - \"%d\"", port)
 		port += 1
+	}
+	return
+}
+
+func writeCa(numberOfOrg, numberOfCa, baseCaPort int, mspBaseDir, company string) (result string) {
+	port := baseCaPort
+	config := "/etc/hyperledger/fabric-ca-server-config"
+
+	org := 1
+	sk := ""
+
+	for i:=0; i<=numberOfCa-1; i++ {
+
+		dir := fmt.Sprintf("%s/peerOrganizations/org%d.%s/ca", mspBaseDir, org, company)
+
+		filepath.Walk(dir, func(path string, info os.FileInfo, e error) error {
+			if e != nil {
+				return e
+			}
+
+			// check if it is a regular file (not dir)
+			if info.Mode().IsRegular() &&  strings.LastIndex(info.Name(), "sk") > 0 {
+				sk = info.Name()
+				fmt.Println("file name:", info.Name())
+				//fmt.Println("file path:", path)
+			}
+			return nil
+		})
+
+		// What happen if number of CA is greater than number of Org
+		org++
+		if org == numberOfOrg+1 {
+			org = 1
+		}
+
+		result += fmt.Sprintf(s_ca, i, i, config, i, company, config, sk, config, i, company, config, sk, port + i, mspBaseDir, company, i)
 	}
 	return
 }
@@ -319,10 +367,12 @@ func writePeer(numberOfOrderer, numberOfOrg, peersPerOrg, vp0Port, event0Port in
 	return
 }
 
-func writeCouchdb(numberOfOrg, peersPerOrg int) (result string) {
+func writeCouchdb(numberOfOrg, peersPerOrg, couchdbPort int) (result string) {
+	port := couchdbPort
 	n := numberOfOrg * peersPerOrg
 	for i:=0; i<=n-1; i++ {
-			result += fmt.Sprintf(s_couchdb, i, i)
+		result += fmt.Sprintf(s_couchdb, i, port, i)
+		port++
 	}
 	return
 }
