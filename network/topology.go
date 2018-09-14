@@ -146,24 +146,32 @@ var s_peer =
       - CORE_PEER_TLS_KEY_FILE=%s/tls/server.key
       - CORE_PEER_TLS_ROOTCERT_FILE=%s/tls/ca.crt
       - CORE_PEER_TLS_CLIENTAUTHREQUIRED=true
-      - CORE_PEER_TLS_CLIENTROOTCAS_FILES=/opt/hyperledger/fabric/msp/crypto-config/ordererOrganizations/trade.com/orderers/orderer0.trade.com/tls/ca.crt /opt/hyperledger/fabric/msp/crypto-config/ordererOrganizations/trade.com/orderers/orderer1.trade.com/tls/ca.crt /opt/hyperledger/fabric/msp/crypto-config/ordererOrganizations/trade.com/orderers/orderer2.trade.com/tls/ca.crt  /opt/hyperledger/fabric/msp/crypto-config/peerOrganizations/org1.trade.com/ca/ca.org1.trade.com-cert.pem /opt/hyperledger/fabric/msp/crypto-config/peerOrganizations/org2.trade.com/ca/ca.org2.trade.com-cert.pem /opt/hyperledger/fabric/msp/crypto-config/peerOrganizations/org3.trade.com/ca/ca.org3.trade.com-cert.pem
+      - CORE_PEER_TLS_CLIENTROOTCAS_FILES=%s
     volumes: 
       - /var/run/:/host/var/run/
-      - /home/tiennv14/devenv/gopath/src/github.com/hyperledger/fabric-test/fabric/common/tools/cryptogen/crypto-config:/opt/hyperledger/fabric/msp/crypto-config
+      - %s:/opt/hyperledger/fabric/msp/crypto-config
     ports: 
-      - 7064:7064
-      - 6054:6054
+      - %d:%d
+      - %d:%d
     depends_on: 
-      - orderer1.trade.com
-      - peer0.org2.trade.com
-      - couchdb3
+      - orderer%d.%s
+      - couchdb%d%s
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
     command: peer node start
-    container_name: peer1.org2.trade.com
+    container_name: peer%d.org%d.%s
 `
 
 var vp0Port = 7061
 var event0Port = 6051
+
+var s_couchdb =
+`
+  couchdb%d:
+    image: hyperledger/fabric-couchdb
+    ports: 
+      - 5989:5984
+    container_name: couchdb%d
+`
 
 func (g *generator) CreateDockerCompose(filename string) {
 
@@ -176,6 +184,8 @@ func (g *generator) CreateDockerCompose(filename string) {
 	compose += writeZookeeper(g.numberOfZookeeper, zooPort)
 	compose += writeKafka(g.numberOfKafka, g.kafkaReplications, kafkaPort, g.numberOfZookeeper, zooPort)
 	compose += writeOrderer(g.numberOfOrderer, ordererPort, g.numberOfKafka, g.company, g.mspBaseDir)
+	compose += writePeer(g.numberOfOrderer, g.numberOfOrg, g.peersPerOrg, vp0Port, event0Port, g.company, g.mspBaseDir)
+	compose += writeCouchdb(g.numberOfOrg, g.peersPerOrg)
 
 	fmt.Println(compose)
 
@@ -258,28 +268,61 @@ func dependsonKafka(numberOfKafka int) (result string) {
 }
 
 
-func writePeer(numberOfOrg, peersPerOrg, vp0Port, event0Port int, company string) (result string) {
+func writePeer(numberOfOrderer, numberOfOrg, peersPerOrg, vp0Port, event0Port int, company, mspBaseDir string) (result string) {
 	vpPort := vp0Port
 	eventPort := event0Port
-	for i:=0; i<=numberOfOrg; i++ {
-		for j:=0; j<peersPerOrg; j++ {
+
+	CLIENTROOTCAS := fmt.Sprintf("/opt/hyperledger/fabric/msp/crypto-config/ordererOrganizations/trade.com/orderers/orderer0.%s/tls/ca.crt", company)
+	for i:=1; i<=numberOfOrderer-1; i++ {
+		CLIENTROOTCAS += fmt.Sprintf(" /opt/hyperledger/fabric/msp/crypto-config/ordererOrganizations/trade.com/orderers/orderer%d.%s/tls/ca.crt", i, company)
+	}
+	CLIENTROOTCAS += fmt.Sprintf(" /opt/hyperledger/fabric/msp/crypto-config/peerOrganizations/org1.%s/ca/ca.org1.%s-cert.pem", company, company)
+	for i:=2; i<=numberOfOrg; i++ {
+		CLIENTROOTCAS += fmt.Sprintf(" /opt/hyperledger/fabric/msp/crypto-config/peerOrganizations/org%d.%s/ca/ca.org%d.%s-cert.pem", i, company, i, company)
+	}
+
+	couchdb := 0
+	ord := 0
+
+	peer0depend := ""
+	boostrap := ""
+
+	for i:=0; i<=numberOfOrg-1; i++ {
+		for j:=0; j<=peersPerOrg-1; j++ {
 			peer := fmt.Sprintf("peer%d.org%d.%s", j, i, company)
 			orderer := fmt.Sprintf("org%d.%s", i, company)
 			peerDir := fmt.Sprintf("/opt/hyperledger/fabric/msp/crypto-config/peerOrganizations/%s/peers/%s", orderer, peer)
+			if ord == numberOfOrderer {
+				ord = 0
+			}
+
 			if j != 0 {
-				//- CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org2.trade.com:7063
 				peer0Port := vp0Port + i * peersPerOrg
 				peer0 := fmt.Sprintf("peer0.org%d.%s", i, company)
-				boostrap := fmt.Sprintf("\n      - CORE_PEER_GOSSIP_BOOTSTRAP=%s:%d\n", peer0, peer0Port)
-				//      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org2.trade.com:7063
-				result += fmt.Sprintf(s_peer, peer, peer, vpPort, peer, vpPort, peer, peer, eventPort, boostrap)
+				peer0depend = fmt.Sprintf("\n      - peer0.org%d.%s", i, company)
+				boostrap = fmt.Sprintf("\n      - CORE_PEER_GOSSIP_BOOTSTRAP=%s:%d", peer0, peer0Port)
 			} else {
-				result += fmt.Sprintf(s_peer, peer, peer, vpPort, peer, vpPort, peer, peer, eventPort, peerDir,
-					peer, vpPort, peer, vpPort, peerDir, peerDir, peerDir)
+				peer0depend = ""
+				boostrap = ""
 			}
-			vp0Port++
+
+			result += fmt.Sprintf(s_peer, peer, peer, vpPort, peer, vpPort, peer, peer, eventPort, boostrap, peerDir,
+				peer, vpPort, peer, vpPort, peerDir, peerDir, peerDir, CLIENTROOTCAS, mspBaseDir, vpPort, vpPort,
+				eventPort, eventPort, ord, company, couchdb, peer0depend, j, i, company)
+
+			vpPort++
 			eventPort++
+			ord++
+			couchdb++
 		}
+	}
+	return
+}
+
+func writeCouchdb(numberOfOrg, peersPerOrg int) (result string) {
+	n := numberOfOrg * peersPerOrg
+	for i:=0; i<=n-1; i++ {
+			result += fmt.Sprintf(s_couchdb, i, i)
 	}
 	return
 }
