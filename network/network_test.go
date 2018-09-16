@@ -13,25 +13,38 @@ func TestGenerator(t *testing.T) {
 
 	baseDir := fmt.Sprintf("%s/src/github.com/proci/crypto-config", os.Getenv("GOPATH"))
 
-	if src, err := os.Stat(baseDir); src.IsDir() {
+	if src, err := os.Stat(baseDir); os.IsExist(err) && src.IsDir() {
 		err = os.RemoveAll(baseDir)
 		if err != nil {
 			log.Fatalf(err.Error())
 		}
 	}
 
-	g.NumberOfOrg(2).
+	//g.NumberOfOrg(6).
+	//	OrdererType("kafka").
+	//	Company("trade.com").
+	//	Profile("test").
+	//	MSPBaseDir(baseDir).
+	//	PeersPerOrg(2).
+	//	NumberOfOrderer(3).
+	//	NumberOfChannel(3).
+	//	NumberOfCa(6).
+	//	NumberOfZookeeper(3).
+	//	KafkaReplications(3).
+	//	NumberOfKafka(3)
+
+	g.NumberOfOrg(1).
 		OrdererType("kafka").
-		Company("nvxtien.com").
+		Company("trade.com").
 		Profile("test").
 		MSPBaseDir(baseDir).
 		PeersPerOrg(2).
-		NumberOfOrderer(3).
-		NumberOfChannel(2).
-		NumberOfCa(2).
-		NumberOfZookeeper(3).
-		KafkaReplications(7).
-		NumberOfKafka(4)
+		NumberOfOrderer(1).
+		NumberOfChannel(3).
+		NumberOfCa(1).
+		NumberOfZookeeper(3). // Z will either be 3, 5, or 7.
+		KafkaReplications(3).
+		NumberOfKafka(4) // At a minimum, K should be set to 4.
 
 	t.Run("GenConfigTx", func(t *testing.T) {
 		g.GenerateConfigTx()
