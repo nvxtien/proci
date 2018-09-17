@@ -28,5 +28,5 @@ func TestStart(t *testing.T) {
 		fmt.Println("ParentId: ", img.ParentID)
 	}
 
-	client.CreateContainer()
+	//client.CreateContainer()
 }
