@@ -25,27 +25,27 @@
 #   unused-packages = true
 
 
-[[constraint]]
-  branch = "master"
-  name = "github.com/btcsuitereleases/btcutil"
+#[[constraint]]
+#  branch = "master"
+#  name = "github.com/btcsuitereleases/btcutil"
+
+#[[constraint]]
+#  name = "github.com/fsouza/go-dockerclient"
+#  version = "1.3.0"
 
 [[constraint]]
-  name = "github.com/fsouza/go-dockerclient"
-  version = "1.3.0"
-
-[[constraint]]
-  #version = "1.0.0-alpha4"
-  branch = "master"
+#  version = "1.0.0-alpha4"
+#  branch = "master"
   name = "github.com/hyperledger/fabric-sdk-go"
-#  revision = "a906355f73d060d7bf95874a9e90dc17589edbb3"
+  revision = "a906355f73d060d7bf95874a9e90dc17589edbb3"
 
-[[constraint]]
-  name = "github.com/kataras/iris"
-  version = "10.7.0"
+#[[constraint]]
+#  name = "github.com/kataras/iris"
+#  version = "10.7.0"
 
-[[constraint]]
-  branch = "v2"
-  name = "gopkg.in/mgo.v2"
+#[[constraint]]
+#  branch = "v2"
+#  name = "gopkg.in/mgo.v2"
 
 [prune]
   go-tests = true

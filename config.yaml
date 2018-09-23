@@ -165,7 +165,7 @@ organizations:
     # dynamic certificate management (enroll, revoke, re-enroll). The following section is only for
     # Fabric-CA servers.
     certificateAuthorities:
-      - ca0.org.hf.nvxtien.io
+      - ca0.org1.hf.nvxtien.io
 
 #
 # List of orderers to send transaction and channel create/update requests to. For the time
@@ -174,7 +174,7 @@ organizations:
 #
 orderers:
   orderer0.hf.nvxtien.io:
-    url: http://localhost:7050
+    url: localhost:7050
 
     # these are standard properties defined by the gRPC library
     # they will be passed in as-is to gRPC client constructor
