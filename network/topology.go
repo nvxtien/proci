@@ -46,11 +46,11 @@ type services struct {
 }
 var s_ca =
 `
-  ca%d:
+  ca%d.%s:
     image: hyperledger/fabric-ca
     environment: 
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
-      - FABRIC_CA_SERVER_CA_NAME=ca%d
+      - FABRIC_CA_SERVER_CA_NAME=ca%d.%s
       - FABRIC_CA_SERVER_CA_CERTFILE=%s/ca.org%d.%s-cert.pem
       - FABRIC_CA_SERVER_CA_KEYFILE=%s/%s
       - FABRIC_CA_SERVER_TLS_ENABLED=true
@@ -61,7 +61,7 @@ var s_ca =
     command: sh -c 'fabric-ca-server start --cfg.identities.allowremove --cfg.affiliations.allowremove -b admin:adminpw -d'
     volumes: 
       - %s/peerOrganizations/org%d.%s/ca/:/etc/hyperledger/fabric-ca-server-config
-    container_name: ca%d
+    container_name: ca%d.%s
 `
 var caPort = 7054
 
@@ -108,7 +108,7 @@ var s_orderer =
       - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
       - ORDERER_GENERAL_LISTENPORT=%d
       - ORDERER_GENERAL_GENESISMETHOD=file
-      - ORDERER_GENERAL_GENESISFILE=/opt/hyperledger/fabric/msp/crypto-config/ordererOrganizations/orderer.block
+      - ORDERER_GENERAL_GENESISFILE=/opt/hyperledger/fabric/msp/crypto-config/ordererOrganizations/orderer.genesis.block
       - ORDERER_GENERAL_LOCALMSPID=OrdererOrg
       - ORDERER_GENERAL_LOCALMSPDIR=%s/msp
       - ORDERER_GENERAL_TLS_ENABLED=true
@@ -125,7 +125,7 @@ var s_orderer =
     depends_on:%s
 `
 
-var ordererPort = 5005
+var ordererPort = 7050
 
 var s_peer =
 `
@@ -265,7 +265,7 @@ func writeCa(numberOfOrg, numberOfCa, baseCaPort int, mspBaseDir, company string
 			}
 			return nil
 		})
-		result += fmt.Sprintf(s_ca, i, i, config, org, company, config, sk, config, org, company, config, sk, port + i*100, mspBaseDir, org, company, i)
+		result += fmt.Sprintf(s_ca, i, company, i, company, config, org, company, config, sk, config, org, company, config, sk, port + i*100, mspBaseDir, org, company, i, company)
 		// What happen if number of CA is greater than number of Org
 		org++
 		if org == numberOfOrg+1 {

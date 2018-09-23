@@ -1,4 +1,4 @@
-package proci
+package util
 
 type OrdererType string
 

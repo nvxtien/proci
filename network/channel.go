@@ -98,7 +98,7 @@ func (c *channel) JoinChannel()  {
 	}
 
 	// Org peers join channel
-	if err = orgResMgmt.JoinChannel(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com")); err != nil {
+	if err = orgResMgmt.JoinChannel(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer0.nvxtien.com")); err != nil {
 		log.Fatalf("Org peers failed to JoinChannel: %s", err)
 	}
 }

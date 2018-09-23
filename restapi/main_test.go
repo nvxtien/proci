@@ -3,11 +3,10 @@ package main
 import (
 	"testing"
 
-	"github.com/kataras/iris/httptest"
-	"github.com/proci/model"
-	"github.com/proci"
 	"encoding/json"
 	"fmt"
+	"github.com/kataras/iris/httptest"
+	"github.com/proci/model"
 )
 
 func TestCustomContextNewImpl(t *testing.T) {
@@ -35,7 +34,7 @@ func TestCustomContextNewImpl(t *testing.T) {
 func TestParse(t *testing.T) {
 	config := &model.Configuration{}
 	config.MumberOfOrg = 2
-	config.OrdererType = proci.Solo
+	//config.OrdererType = proci.Solo
 	config.Profile = "test"
 
 	c, _ := json.Marshal(config)

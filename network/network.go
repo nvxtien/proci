@@ -1,19 +1,19 @@
 package network
 
 import (
-	"strings"
-	"os"
 	"bufio"
-	"io/ioutil"
 	"fmt"
+	"github.com/proci/util"
+	"io/ioutil"
 	"log"
+	"os"
 	"os/exec"
-	"github.com/proci"
+	"strings"
 )
 
 type Generator interface {
 	NumberOfOrg(int) Generator
-	OrdererType(proci.OrdererType) Generator
+	OrdererType(util.OrdererType) Generator
 	NumberOfKafka(int) Generator
 	NumberOfZookeeper(int) Generator
 	KafkaReplications(int) Generator
@@ -34,7 +34,7 @@ type Generator interface {
 
 type generator struct {
 	numberOfOrg			int
-	ordererType			proci.OrdererType
+	ordererType			util.OrdererType
 	numberOfKafka		int
 	numberOfZookeeper 	int
 	kafkaReplications	int
@@ -52,7 +52,7 @@ func (g *generator) NumberOfOrg(numberOfOrg int) Generator {
 	return g
 }
 
-func (g *generator) OrdererType(ordererType proci.OrdererType) Generator {
+func (g *generator) OrdererType(ordererType util.OrdererType) Generator {
 	g.ordererType = ordererType
 	return g
 }
@@ -169,7 +169,7 @@ func (g *generator) GenerateConfigTx() (bool, error) {
 				configtx = append(configtx, line)
 				configtx = append(configtx, "\n")
 				for i := 1; i <= numberOfOrg; i++ {
-					configtx = append(configtx, fmt.Sprintf("         - orderer%d.%s:%d\n", i - 1, comName, 5005 + (i - 1)))
+					configtx = append(configtx, fmt.Sprintf("         - orderer%d.%s:%d\n", i - 1, comName, 7050 + (i - 1)))
 				}
 				//continue
 
@@ -217,8 +217,8 @@ func createPeerOrg(line string, i int, MSPBaseDir string, comName string) []stri
 	configtx = append(configtx, fmt.Sprintf("        Name: PeerOrg%d\n", i))
 	configtx = append(configtx, fmt.Sprintf("        ID: PeerOrg%d\n", i))
 	configtx = append(configtx, fmt.Sprintf("        MSPDir: %s/peerOrganizations/org%d.%s/msp\n", MSPBaseDir, i, comName))
-	configtx = append(configtx, fmt.Sprintf("        ID: PeerOrg%d\n", i))
-	configtx = append(configtx, fmt.Sprintf("        ID: PeerOrg%d\n", i))
+	//configtx = append(configtx, fmt.Sprintf("        ID: PeerOrg%d\n", i))
+	//configtx = append(configtx, fmt.Sprintf("        ID: PeerOrg%d\n", i))
 	configtx = append(configtx, "        Policies:\n")
 	configtx = append(configtx, "            Readers:\n")
 	configtx = append(configtx, "                Type: Signature\n")
@@ -265,8 +265,8 @@ func createOrdererOrg(line string, MSPBaseDir string, comName string) []string {
 func (g *generator) GenerateCryptoCfg() {
 	log.Println("************* generate crypto-config.yaml *************")
 
-	if _, err := os.Stat(os.Getenv("GOPATH") + "/src/github.com/proci" + "/crypto-config.yaml"); os.IsExist(err) {
-		err := os.Remove(os.Getenv("GOPATH") + "/src/github.com/proci" + "/crypto-config.yaml")
+	if _, err := os.Stat(os.Getenv("GOPATH") + "/src/github.com/proci/crypto-config.yaml"); os.IsExist(err) {
+		err := os.Remove(os.Getenv("GOPATH") + "/src/github.com/proci/crypto-config.yaml")
 		if err != nil {
 			log.Fatalf("Can not delete crypto-config.yaml")
 		}
@@ -296,7 +296,7 @@ func (g *generator) GenerateCryptoCfg() {
 		cryptocfg = append(cryptocfg, "        Count: 1\n")
 	}
 
-	err := ioutil.WriteFile(os.Getenv("GOPATH") + "/src/github.com/proci" + "/crypto-config.yaml", []byte(strings.Join(cryptocfg, "")), 0644)
+	err := ioutil.WriteFile(os.Getenv("GOPATH") + "/src/github.com/proci/crypto-config.yaml", []byte(strings.Join(cryptocfg, "")), 0644)
 	if err != nil {
 		log.Fatalf(err.Error())
 	}
@@ -305,8 +305,8 @@ func (g *generator) GenerateCryptoCfg() {
 func (g *generator) ExecuteCryptogen() {
 	log.Println("************* execute cryptogen *************")
 
-	if _, err := os.Stat(os.Getenv("GOPATH") + "/src/github.com/proci" + "/crypto-config"); os.IsExist(err) {
-		err := os.Remove(os.Getenv("GOPATH") + "/src/github.com/proci" + "/crypto-config")
+	if _, err := os.Stat(g.mspBaseDir); os.IsExist(err) {
+		err := os.Remove(g.mspBaseDir)
 		if err != nil {
 			log.Fatalf("Can not delete crypto-config")
 		}
@@ -319,7 +319,7 @@ func (g *generator) ExecuteCryptogen() {
 	}
 	log.Printf("cryptogen is available at %s\n", path)
 
-	cmd := exec.Command("cryptogen", "generate", "--output="+ os.Getenv("GOPATH") + "/src/github.com/proci" +  "/crypto-config", "--config=" + os.Getenv("GOPATH") + "/src/github.com/proci" +  "/crypto-config.yaml")
+	cmd := exec.Command("cryptogen", "generate", "--output="+ g.mspBaseDir, "--config=" + os.Getenv("GOPATH") + "/src/github.com/proci" +  "/crypto-config.yaml")
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(stdoutStderr)
@@ -330,8 +330,8 @@ func (g *generator) CreateOrderGenesisBlock() {
 	log.Println(" - create orderer genesis block ...")
 
 	profile := g.profile
-	ordererDir := os.Getenv("GOPATH") + "/src/github.com/proci" + "/crypto-config/ordererOrganizations"
-	ordBlock := fmt.Sprintf("%s/%sorderer.block", ordererDir, profile)
+	ordererDir := g.mspBaseDir + "/ordererOrganizations"
+	ordBlock := fmt.Sprintf("%s/%sorderer.genesis.block", ordererDir, profile)
 	//testChannel := "channel"
 
 	//CHAN_PROFILE := fmt.Sprintf("%sChannel", profile)
@@ -348,9 +348,9 @@ func (g *generator) CreateOrderGenesisBlock() {
 	if _, err := os.Stat(ordererDir); os.IsNotExist(err) {
 		//err := os.Remove("crypto-config")
 		if err != nil {
-			log.Fatalf("Can not find crypto-config")
+			log.Fatalf("Can not find " + ordererDir)
 		}
-		log.Printf("Can not find crypto-config")
+		log.Printf("Can not find " + ordererDir)
 	}
 
 	// configtxgen -profile "testOrgsOrdererGenesis" -channelID "channel" -outputBlock "./crypto-config/ordererOrganizations/orderer.block"
@@ -388,7 +388,7 @@ func (g *generator) CreateChannels() {
 	log.Printf("configtxgen is available at %s\n", path)
 
 	nChannel := g.numberOfChannel
-	ordererDir := os.Getenv("GOPATH") + "/src/github.com/proci" + "/crypto-config/ordererOrganizations"
+	ordererDir := g.mspBaseDir + "/ordererOrganizations"
 	ORG_PROFILE := fmt.Sprintf("%sorgschannel", g.profile)
 	//for (( i=1; i<=$nChannel; i++ ))
 	//do
@@ -438,7 +438,7 @@ func (g *generator) CreateAnchorPeers() {
 	//$CFGEXE -profile $ORG_PROFILE -outputAnchorPeersUpdate $OrgMSP -channelID $ORG_PROFILE"$i" -asOrg $orgMSP
 	//done
 
-	ordererDir := os.Getenv("GOPATH") + "/src/github.com/proci" + "/crypto-config/ordererOrganizations"
+	ordererDir := g.mspBaseDir + "/ordererOrganizations"
 	ORG_PROFILE := fmt.Sprintf("%sorgschannel", g.profile)
 	projectDir := os.Getenv("GOPATH") + "/src/github.com/proci"
 

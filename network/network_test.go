@@ -11,7 +11,7 @@ var g = &generator{}
 
 func TestGenerator(t *testing.T) {
 
-	baseDir := fmt.Sprintf("%s/src/github.com/proci/crypto-config", os.Getenv("GOPATH"))
+	baseDir := fmt.Sprintf("%s/src/github.com/proci/fixtures/crypto-config", os.Getenv("GOPATH"))
 
 	if src, err := os.Stat(baseDir); os.IsExist(err) && src.IsDir() {
 		err = os.RemoveAll(baseDir)
@@ -20,27 +20,14 @@ func TestGenerator(t *testing.T) {
 		}
 	}
 
-	//g.NumberOfOrg(6).
-	//	OrdererType("kafka").
-	//	Company("trade.com").
-	//	Profile("test").
-	//	MSPBaseDir(baseDir).
-	//	PeersPerOrg(2).
-	//	NumberOfOrderer(3).
-	//	NumberOfChannel(3).
-	//	NumberOfCa(6).
-	//	NumberOfZookeeper(3).
-	//	KafkaReplications(3).
-	//	NumberOfKafka(3)
-
 	g.NumberOfOrg(1).
 		OrdererType("kafka").
-		Company("trade.com").
-		Profile("test").
+		Company("hf.nvxtien.io").
+		Profile("").
 		MSPBaseDir(baseDir).
 		PeersPerOrg(2).
-		NumberOfOrderer(1).
-		NumberOfChannel(3).
+		NumberOfOrderer(2).
+		NumberOfChannel(1).
 		NumberOfCa(1).
 		NumberOfZookeeper(3). // Z will either be 3, 5, or 7.
 		KafkaReplications(3).
