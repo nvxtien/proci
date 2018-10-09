@@ -14,7 +14,7 @@
 NETWORK=fabric-ca
 
 # Names of the orderer organizations
-ORDERER_ORGS="orderer0-org"
+ORDERER_ORGS="ordering-services"
 
 # Names of the peer organizations
 PEER_ORGS="sale loan"

@@ -97,7 +97,7 @@ function writeRunFabric {
     volumes:
       - ./scripts:/scripts
       - ./$DATA:/$DATA
-      - ${SAMPLES_DIR}:/opt/gopath/src/github.com/hyperledger/fabric-samples
+      - ${SAMPLES_DIR}:/opt/gopath/src/github.com/proci
       - ${FABRIC_DIR}:/opt/gopath/src/github.com/hyperledger/fabric
     networks:
       - $NETWORK

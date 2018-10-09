@@ -215,7 +215,7 @@ function makePolicy  {
 function installChaincode {
    switchToAdminIdentity
    logr "Installing chaincode on $PEER_HOST ..."
-   peer chaincode install -n mycc -v 1.0 -p github.com/hyperledger/fabric-samples/chaincode/abac/go
+   peer chaincode install -n mycc -v 1.0 -p github.com/proci/chaincode/abac/go
 }
 
 function fetchConfigBlock {
