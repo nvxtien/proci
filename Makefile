@@ -14,7 +14,7 @@ build:
 ##### ENV
 env-up:
 	@echo "Start environment ..."
-	@cd fixtures && docker-compose up --force-recreate
+	@cd fixtures && docker-compose up --force-recreate -d
 	@echo "Environment up"
 
 env-down:
@@ -25,12 +25,12 @@ env-down:
 ##### RUN
 run:
 	@echo "Start app ..."
-	@./proci
+	@./heroes-service
 
 ##### CLEAN
 clean: env-down
 	@echo "Clean up ..."
-	@rm -rf /tmp/proci-*
-	@docker rm -f -v `docker ps -a --no-trunc | grep "proci" | cut -d ' ' -f 1` 2>/dev/null || true
-	@docker rmi `docker images --no-trunc | grep "proci" | cut -d ' ' -f 1` 2>/dev/null || true
+	@rm -rf /tmp/heroes-service-* heroes-service
+	@docker rm -f -v `docker ps -a --no-trunc | grep "heroes-service" | cut -d ' ' -f 1` 2>/dev/null || true
+	@docker rmi `docker images --no-trunc | grep "heroes-service" | cut -d ' ' -f 1` 2>/dev/null || true
 	@echo "Clean up done"

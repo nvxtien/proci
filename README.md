@@ -1,2 +1,0 @@
-# proci
-open source

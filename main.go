@@ -12,19 +12,19 @@ func main() {
 	// Definition of the Fabric SDK properties
 	fSetup := blockchain.FabricSetup{
 		// Network parameters
-		OrdererID: "orderer0.hf.nvxtien.io",
+		OrdererID: "orderer.exchange.io",
 
 		// Channel parameters
-		ChannelID:     "orgschannel1",
-		ChannelConfig: os.Getenv("GOPATH") + "/src/github.com/proci/fixtures/crypto-config/ordererOrganizations/orgschannel1.tx",
+		ChannelID:     "exchange",
+		ChannelConfig: os.Getenv("GOPATH") + "/src/github.com/proci/fixtures/artifacts/exchange.channel.tx",
 
 		// Chaincode parameters
-		ChainCodeID:     "proci",
+		ChainCodeID:     "heroes-service",
 		ChaincodeGoPath: os.Getenv("GOPATH"),
-		ChaincodePath:   "github.com/proci/chaincode/",
+		ChaincodePath:   "github.com/proci/chaincode/exchange",
 		OrgAdmin:        "Admin",
-		OrgName:         "org1",
-		ConfigFile:      "config.yaml",
+		OrgName:         "sale",
+		ConfigFile:      "./fixtures/config.yaml",
 
 		// User parameters
 		UserName: "User1",

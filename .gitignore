@@ -1,8 +1,9 @@
 crypto-config/
-fixtures/
+fixtures/artifacts
 configtx.yaml
 crypto-config.yaml
 docker-compose.yaml
+config.yaml
 
 # ---> Go
 # Compiled Object files, Static and Dynamic libs (Shared Objects)
