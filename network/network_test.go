@@ -22,7 +22,7 @@ func TestGenerator(t *testing.T) {
 
 	g.NumberOfOrg(1).
 		OrdererType("kafka").
-		Company("hf.nvxtien.io").
+		Company("nvxtien.io").
 		Profile("").
 		MSPBaseDir(baseDir).
 		PeersPerOrg(2).

@@ -1,21 +1,11 @@
 package network
 
 import (
-	"fmt"
-	"github.com/btcsuitereleases/btcutil/base58"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
-	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-sdk-go/test/metadata"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	"log"
-	"os"
-
-	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 )
 
 type Client interface {
@@ -37,7 +27,7 @@ const (
 
 func (c *channel) CreateChannel() {
 
-	projectDir := fmt.Sprintf("%s/src/github.com/proci", os.Getenv("GOPATH"))
+	/*projectDir := fmt.Sprintf("%s/src/github.com/proci", os.Getenv("GOPATH"))
 	configOpt := config.FromFile(projectDir + "/config_e2e.yaml")
 	//if configOpt == nil {
 	//	log.Fatal("configOpt must be not nil")
@@ -80,7 +70,7 @@ func (c *channel) CreateChannel() {
 		log.Fatalf("txID can not be empty")
 	}
 
-	fmt.Println(txID)
+	fmt.Println(txID)*/
 }
 
 func (c *channel) JoinChannel()  {
@@ -104,12 +94,12 @@ func (c *channel) JoinChannel()  {
 }
 
 var (
-	ccID = "example_cc_e2e" + metadata.TestRunID
+	//ccID = "example_cc_e2e" + metadata.TestRunID
 )
 
 func (c *channel) CreateChainCode() {
 
-	configOpt := config.FromFile("config_e2e.yaml")
+	/*configOpt := config.FromFile("config_e2e.yaml")
 	sdk, err := fabsdk.New(configOpt)
 
 	//prepare context
@@ -125,9 +115,9 @@ func (c *channel) CreateChainCode() {
 	ccPkg, err := packager.NewCCPackage("github.com/example_cc", integration.GetDeployPath())
 	if err != nil {
 		log.Fatalf(err.Error())
-	}
+	}*/
 	// Install example cc to org peers
-	installCCReq := resmgmt.InstallCCRequest{Name: ccID, Path: "github.com/example_cc", Version: "0", Package: ccPkg}
+	/*installCCReq := resmgmt.InstallCCRequest{Name: ccID, Path: "github.com/example_cc", Version: "0", Package: ccPkg}
 	_, err = orgResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		log.Fatalf(err.Error())
@@ -139,7 +129,7 @@ func (c *channel) CreateChainCode() {
 		channelID,
 		resmgmt.InstantiateCCRequest{Name: ccID, Path: "github.com/example_cc", Version: "0", Args: integration.ExampleCCInitArgs(), Policy: ccPolicy},
 		resmgmt.WithRetry(retry.DefaultResMgmtOpts),
-	)
+	)*/
 
-	fmt.Println(resp)
+	//fmt.Println(resp)
 }
