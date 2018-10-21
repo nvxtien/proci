@@ -1,6 +1,6 @@
 crypto-config/
 fixtures/
-configtx.yaml
+#configtx.yaml
 crypto-config.yaml
 docker-compose.yaml
 
