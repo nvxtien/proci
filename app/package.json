@@ -4,7 +4,9 @@
   "description": "",
   "scripts": {
     "eslint": "eslint *.js client",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "snyk-protect": "snyk protect",
+    "prepublish": "npm run snyk-protect"
   },
   "author": "nvxtien",
   "license": "MIT",
@@ -44,7 +46,8 @@
     "webpack-dev-middleware": "^1.10.1",
     "webpack-hot-middleware": "^2.18.0",
     "whatwg-fetch": "^2.0.3",
-    "when": "^3.7.8"
+    "when": "^3.7.8",
+    "snyk": "^1.316.1"
   },
   "babel": {
     "presets": [
@@ -99,5 +102,6 @@
     ]
   },
   "main": "index.js",
-  "repository": "git@github.com:nvxtien/proci.git"
+  "repository": "git@github.com:nvxtien/proci.git",
+  "snyk": true
 }
